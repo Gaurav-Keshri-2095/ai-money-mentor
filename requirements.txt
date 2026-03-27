@@ -1,0 +1,24 @@
+# --- Core Frameworks ---
+fastapi[all]
+uvicorn
+langgraph
+langchain
+langchain-openai
+python-dotenv
+
+# --- Data & PDF Parsing ---
+pandas
+pypdf
+pymupdf
+httpx
+
+# --- Financial Math ---
+numpy
+numpy-financial
+
+# --- Database & Auth ---
+supabase
+
+# --- Utilities ---
+pydantic
+pydantic-settings
