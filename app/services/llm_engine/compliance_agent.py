@@ -1,19 +1,19 @@
-from langchain_openai import ChatOpenAI
+# async def compliance_guardian_node(state):
+#     advice = state["final_output"]
+#     disclaimer = "\n\n⚠️ Disclaimer: Market risks apply. This is for hackathon demo purposes."
+    
+#     return {
+#         "final_output": advice + disclaimer,
+#         "is_compliant": True
+#     }
+
+
+from langchain_groq import ChatGroq
 
 async def compliance_guardian_node(state):
-    llm = ChatOpenAI(model="gpt-4o")
+    llm = ChatGroq(model_name="llama-3.3-70b-versatile")
     advice = state["final_output"]
-    
-    prompt = f"""
-    Review this financial advice for SEBI/RBI Compliance: {advice}
-    
-    Rules:
-    - No specific stock 'BUY/SELL' recommendations.
-    - No guaranteed returns promises.
-    - Must mention 'Market risks'.
-    
-    If non-compliant, rewrite it. If compliant, return it as is.
-    """
+    prompt = f"Check this for SEBI/RBI compliance. No direct buy/sell calls. Rewrite if needed: {advice}"
     
     response = llm.invoke(prompt)
     
