@@ -1,0 +1,51 @@
+{
+  "user_profile": {
+    "age": 25,
+    "monthly_income": 80000,
+    "monthly_expenses": 35000,
+    "tax_regime_preferred": "new",
+    "financial_goals": ["Marriage in 3 years", "Buy a car"]
+  },
+  "accounts": [
+    {
+      "bank_name": "HDFC Bank",
+      "type": "savings",
+      "balance": 150000
+    }
+  ],
+  "investments": {
+    "mutual_funds": [
+      {
+        "fund_name": "Parag Parikh Flexi Cap Fund",
+        "category": "Equity",
+        "invested_amount": 100000,
+        "current_value": 120000
+      },
+      {
+        "fund_name": "Quant Small Cap Fund",
+        "category": "Equity",
+        "invested_amount": 50000,
+        "current_value": 80000
+      }
+    ],
+    "stocks": [
+      {"symbol": "RELIANCE", "quantity": 10, "avg_price": 2400}
+    ]
+  },
+  "insurance": {
+    "health_insurance": 500000,
+    "term_insurance": 0
+  },
+  "liabilities": [
+    {
+      "type": "Personal Loan",
+      "total_amount": 50000,
+      "emi": 4500,
+      "remaining_tenure_months": 12
+    }
+  ],
+  "tax_deductions": {
+    "section_80C": 120000,
+    "section_80D": 0
+  }
+}
