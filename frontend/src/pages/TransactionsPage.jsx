@@ -1,27 +1,63 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Filter } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { transactionsAPI } from '../services/api';
 
 const categories = ['Housing', 'Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Education', 'Salary', 'Freelance', 'Other'];
 
 const TransactionsPage = ({ transactions, setTransactions }) => {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], description: '', amount: '', type: 'expense', category: 'Food' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ 
+    date: new Date().toISOString().split('T')[0], 
+    description: '', 
+    amount: '', 
+    transaction_type: 'expense', 
+    category: 'Food' 
+  });
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.description || !form.amount) return;
-    const newTx = { ...form, id: Date.now(), amount: parseFloat(form.amount) };
-    setTransactions(prev => [...prev, newTx]);
-    setForm({ date: new Date().toISOString().split('T')[0], description: '', amount: '', type: 'expense', category: 'Food' });
-    setShowForm(false);
+    
+    setIsSubmitting(true);
+    try {
+      const data = { 
+        ...form, 
+        amount: parseFloat(form.amount) 
+      };
+      const result = await transactionsAPI.create(data);
+      
+      // Update local state with the new transaction including the ID from backend
+      setTransactions(prev => [...prev, { ...data, id: result.id }]);
+      
+      setForm({ 
+        date: new Date().toISOString().split('T')[0], 
+        description: '', 
+        amount: '', 
+        transaction_type: 'expense', 
+        category: 'Food' 
+      });
+      setShowForm(false);
+    } catch (err) {
+      alert("Failed to add transaction: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDelete = (id) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this transaction?")) return;
+    
+    try {
+      await transactionsAPI.delete(id);
+      setTransactions(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      alert("Failed to delete transaction: " + err.message);
+    }
   };
 
-  const filtered = filter === 'all' ? transactions : transactions.filter(t => t.type === filter);
+  const filtered = filter === 'all' ? transactions : transactions.filter(t => t.type === filter || t.transaction_type === filter);
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
@@ -52,7 +88,7 @@ const TransactionsPage = ({ transactions, setTransactions }) => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
-            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#013366] cursor-pointer">
+            <select value={form.transaction_type} onChange={e => setForm({ ...form, transaction_type: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#013366] cursor-pointer">
               <option value="expense">Expense</option>
               <option value="income">Income</option>
             </select>
@@ -66,7 +102,10 @@ const TransactionsPage = ({ transactions, setTransactions }) => {
             </div>
           </div>
           <div className="md:col-span-6 flex gap-3">
-            <button type="submit" className="bg-[#013366] text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-900 transition cursor-pointer">Save</button>
+            <button type="submit" disabled={isSubmitting} className="bg-[#013366] text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-900 transition cursor-pointer disabled:opacity-50 flex items-center gap-2">
+              {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+              Save
+            </button>
             <button type="button" onClick={() => setShowForm(false)} className="bg-gray-100 text-gray-600 px-6 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition cursor-pointer">Cancel</button>
           </div>
         </form>
@@ -98,26 +137,29 @@ const TransactionsPage = ({ transactions, setTransactions }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {[...filtered].reverse().map(t => (
-                <tr key={t.id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-3 text-gray-600 font-medium">{t.date}</td>
-                  <td className="px-6 py-3 text-gray-800 font-semibold">{t.description}</td>
-                  <td className="px-6 py-3"><span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">{t.category}</span></td>
-                  <td className="px-6 py-3">
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${t.type === 'income' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                      {t.type.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className={`px-6 py-3 text-right font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.type === 'income' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
-                  </td>
-                  <td className="px-6 py-3 text-center">
-                    <button onClick={() => handleDelete(t.id)} className="text-gray-400 hover:text-red-600 transition cursor-pointer">
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {[...filtered].reverse().map(t => {
+                const type = (t.type || t.transaction_type || '').toLowerCase();
+                return (
+                  <tr key={t.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-3 text-gray-600 font-medium">{t.date}</td>
+                    <td className="px-6 py-3 text-gray-800 font-semibold">{t.description}</td>
+                    <td className="px-6 py-3"><span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">{t.category}</span></td>
+                    <td className="px-6 py-3">
+                      <span className={`text-xs font-bold px-2 py-1 rounded ${type === 'income' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                        {type.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className={`px-6 py-3 text-right font-bold ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {type === 'income' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
+                    </td>
+                    <td className="px-6 py-3 text-center">
+                      <button onClick={() => handleDelete(t.id)} className="text-gray-400 hover:text-red-600 transition cursor-pointer">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
