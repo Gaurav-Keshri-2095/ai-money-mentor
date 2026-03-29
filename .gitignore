@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Local Money Mentor files
+ai_money_mentor.db
+ai_money_mentor.db-journal
+uploads/
+/tmp/
+verify_*.py
+test_*.py
+create_mock_pdf.py
+Ujjawal_Keshri_Bank_Statement.pdf
+*.log

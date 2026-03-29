@@ -58,12 +58,6 @@ const MyMoneyMentor = ({ onOpenDashboard }) => {
               <span className="text-[10px] text-gray-400 font-bold uppercase">Open Full Dashboard</span>
             </div>
           </button>
-
-          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100">
-            <p className="text-[11px] text-yellow-800 leading-relaxed font-medium italic">
-              "AI Insight: Your SIP in Nifty 50 has outperformed your Gold holdings by 12% this year. Consider rebalancing."
-            </p>
-          </div>
         </div>
       </div>
 

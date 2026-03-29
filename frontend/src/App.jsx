@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  authAPI, getAuthToken, clearAuthToken,
+  transactionsAPI, accountsAPI, goalsAPI, debtsAPI
+} from './services/api';
 
 // Layout
 import Sidebar from './components/layout/Sidebar';
@@ -6,7 +10,6 @@ import TopHeader from './components/layout/TopHeader';
 
 // Home
 import ETHeader from './components/home/ETHeader';
-import MyMoneyMentor from './components/home/MyMoneyMentor';
 
 // Pages
 import AuthPage from './pages/AuthPage';
@@ -17,40 +20,32 @@ import BudgetPage from './pages/BudgetPage';
 import GoalsPage from './pages/GoalsPage';
 import DebtsPage from './pages/DebtsPage';
 import SettingsPage from './pages/SettingsPage';
-import AIMentorPage from './pages/AIMentorPage';
+
+// Agent Pages
+import MoneyHealthPage from './pages/MoneyHealthPage';
+import TaxWizardPage from './pages/TaxWizardPage';
+import PortfolioXRayPage from './pages/PortfolioXRayPage';
+import FirePlannerPage from './pages/FirePlannerPage';
+import AIChatPage from './pages/AIChatPage';
+
+import { Loader2 } from 'lucide-react';
 
 const App = () => {
   // --- ROUTING STATE ---
   const [view, setView] = useState('home'); // 'home' | 'auth' | 'app'
   const [activePage, setActivePage] = useState('dashboard');
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // --- SHARED DATA STATE ---
-  const [transactions, setTransactions] = useState([
-    { id: 1, date: '2026-03-25', description: 'Monthly Salary', amount: 150000, type: 'income', category: 'Salary' },
-    { id: 2, date: '2026-03-25', description: 'Rent Payment', amount: 35000, type: 'expense', category: 'Housing' },
-    { id: 3, date: '2026-03-26', description: 'Grocery Shopping', amount: 4500, type: 'expense', category: 'Food' },
-    { id: 4, date: '2026-03-26', description: 'Uber Rides', amount: 1200, type: 'expense', category: 'Transport' },
-    { id: 5, date: '2026-03-27', description: 'Freelance Project', amount: 25000, type: 'income', category: 'Freelance' },
-  ]);
-
-  const [accounts, setAccounts] = useState([
-    { id: 1, name: 'SBI Savings', type: 'Savings', balance: 325000 },
-    { id: 2, name: 'HDFC Current', type: 'Current', balance: 100000 },
-  ]);
-
+  const [transactions, setTransactions] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [debts, setDebts] = useState([]);
   const [budgets, setBudgets] = useState({
     Housing: 40000,
     Food: 10000,
     Transport: 5000,
   });
-
-  const [goals, setGoals] = useState([
-    { id: 1, name: 'Emergency Fund', target: 500000, saved: 175000 },
-  ]);
-
-  const [debts, setDebts] = useState([
-    { id: 1, name: 'Education Loan', total: 800000, emi: 15000, remaining: 520000 },
-  ]);
 
   const [settings, setSettings] = useState({
     name: 'ujjawal',
@@ -58,11 +53,67 @@ const App = () => {
     notifications: true,
   });
 
+  const loadData = async () => {
+    try {
+      const [txs, accs, gs, dbs] = await Promise.all([
+        transactionsAPI.getAll(),
+        accountsAPI.getAll(),
+        goalsAPI.getAll(),
+        debtsAPI.getAll()
+      ]);
+      setTransactions(txs);
+      setAccounts(accs);
+      setGoals(gs);
+      setDebts(dbs);
+    } catch (err) {
+      console.error("Failed to load initial data", err);
+    }
+  };
+
+  useEffect(() => {
+    const initAuth = async () => {
+      if (getAuthToken()) {
+        try {
+          const user = await authAPI.getProfile();
+          setSettings(prev => ({ ...prev, name: user.name }));
+          await loadData();
+          setView('app');
+        } catch (err) {
+          clearAuthToken();
+        }
+      }
+      setIsInitializing(false);
+    };
+    initAuth();
+  }, []);
+
+  if (isInitializing) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f3f4f6]">
+        <Loader2 className="animate-spin text-[#013366]" size={40} />
+      </div>
+    );
+  }
+
+  const handleLogout = () => {
+    clearAuthToken();
+    setView('home');
+  };
+
+  const handleLogin = async (user) => {
+    setSettings(prev => ({ ...prev, name: user.name }));
+    setIsInitializing(true);
+    await loadData();
+    setIsInitializing(false);
+    setView('app'); 
+    setActivePage('dashboard'); 
+  };
+
   // --- AUTH VIEW ---
   if (view === 'auth') {
     return (
       <AuthPage
-        onLogin={() => { setView('app'); setActivePage('dashboard'); }}
+        onLogin={handleLogin}
         onBack={() => setView('home')}
       />
     );
@@ -76,8 +127,6 @@ const App = () => {
           return <DashboardPage transactions={transactions} accounts={accounts} />;
         case 'transactions':
           return <TransactionsPage transactions={transactions} setTransactions={setTransactions} />;
-        case 'ai-mentor':
-          return <AIMentorPage transactions={transactions} accounts={accounts} budgets={budgets} goals={goals} debts={debts} />;
         case 'accounts':
           return <AccountsPage accounts={accounts} setAccounts={setAccounts} />;
         case 'budget':
@@ -86,12 +135,26 @@ const App = () => {
           return <GoalsPage goals={goals} setGoals={setGoals} />;
         case 'debts':
           return <DebtsPage debts={debts} setDebts={setDebts} />;
+        
+        // Agent Pages
+        case 'money-health':
+          return <MoneyHealthPage />;
+        case 'tax-wizard':
+          return <TaxWizardPage />;
+        case 'portfolio-xray':
+          return <PortfolioXRayPage />;
+        case 'fire-planner':
+          return <FirePlannerPage />;
+        case 'ai-chat':
+          return <AIChatPage onRefreshData={loadData} />;
+
         case 'settings':
           return (
             <SettingsPage
               settings={settings}
               setSettings={setSettings}
               allData={{ transactions, accounts, budgets, goals, debts, settings }}
+              onLogout={handleLogout}
             />
           );
         default:
@@ -123,32 +186,12 @@ const App = () => {
         onHome={() => setView('home')}
       />
 
-      <main className="max-w-7xl mx-auto grid grid-cols-12 gap-8 p-6 mt-4">
-        {/* News Placeholders */}
-        <div className="col-span-12 lg:col-span-8 space-y-6">
-          <div className="bg-white p-6 border border-gray-200 rounded-lg shadow-sm border-t-4 border-red-600">
-            <h2 className="text-2xl font-bold mb-6 font-serif border-b pb-4 text-gray-800">Top Market Stories</h2>
-            {[1, 2, 3].map(i => (
-              <div key={i} className={`flex gap-6 ${i < 3 ? 'mb-8 pb-6 border-b border-gray-100' : ''}`}>
-                <div className="w-1/3 aspect-video bg-gray-200 rounded animate-pulse"></div>
-                <div className="w-2/3 space-y-3">
-                  <div className={`h-4 w-20 rounded animate-pulse ${i === 1 ? 'bg-red-100' : i === 2 ? 'bg-blue-100' : 'bg-green-100'}`}></div>
-                  <div className="h-6 bg-gray-200 w-full rounded animate-pulse"></div>
-                  <div className="h-6 bg-gray-200 w-5/6 rounded animate-pulse"></div>
-                  <div className="h-4 bg-gray-100 w-full rounded animate-pulse mt-4"></div>
-                  <div className="h-4 bg-gray-100 w-2/3 rounded animate-pulse"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* AI Mentor Widget */}
-        <div className="col-span-12 lg:col-span-4">
-          <div className="sticky top-28">
-            <MyMoneyMentor onOpenDashboard={() => setView('auth')} />
-          </div>
-        </div>
+      <main className="flex-1 w-full relative h-[calc(100vh-140px)]">
+        <iframe 
+          src="/ET_clean.html" 
+          className="w-full h-full border-0 absolute inset-0 z-0"
+          title="Economic Times News"
+        />
       </main>
     </div>
   );

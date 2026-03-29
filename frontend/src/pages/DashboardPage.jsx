@@ -1,17 +1,26 @@
 import React from 'react';
-import { Wallet, TrendingUp, TrendingDown, ArrowRightLeft, Receipt, PiggyBank } from 'lucide-react';
+import { Wallet, ArrowRightLeft, Receipt, PiggyBank } from 'lucide-react';
 
-const DashboardPage = ({ transactions, accounts }) => {
-  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+const DashboardPage = ({ transactions = [], accounts = [] }) => {
+  const totalBalance = (accounts || []).reduce((s, a) => s + (a.balance || 0), 0);
+  
+  const totalIncome = (transactions || []).filter(t => {
+    const type = (t.type || t.transaction_type || '').toLowerCase();
+    return type === 'income';
+  }).reduce((s, t) => s + (t.amount || 0), 0);
+  
+  const totalExpense = (transactions || []).filter(t => {
+    const type = (t.type || t.transaction_type || '').toLowerCase();
+    return type === 'expense';
+  }).reduce((s, t) => s + (t.amount || 0), 0);
+  
   const savings = totalIncome - totalExpense;
-  const recent = [...transactions].reverse().slice(0, 5);
+  const recent = [...(transactions || [])].reverse().slice(0, 5);
 
   const fmt = (n) => {
     if (n >= 100000) return '₹' + (n / 100000).toFixed(2) + 'L';
     if (n >= 1000) return '₹' + (n / 1000).toFixed(1) + 'K';
-    return '₹' + n.toLocaleString('en-IN');
+    return '₹' + (n || 0).toLocaleString('en-IN');
   };
 
   const cards = [
@@ -64,16 +73,19 @@ const DashboardPage = ({ transactions, accounts }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {recent.map(t => (
-                <tr key={t.id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-3 text-gray-600 font-medium">{t.date}</td>
-                  <td className="px-6 py-3 text-gray-800 font-semibold">{t.description}</td>
-                  <td className="px-6 py-3"><span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">{t.category}</span></td>
-                  <td className={`px-6 py-3 text-right font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.type === 'income' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
-                  </td>
-                </tr>
-              ))}
+              {recent.map(t => {
+                const type = (t.type || t.transaction_type || '').toLowerCase();
+                return (
+                  <tr key={t.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-3 text-gray-600 font-medium">{t.date}</td>
+                    <td className="px-6 py-3 text-gray-800 font-semibold">{t.description}</td>
+                    <td className="px-6 py-3"><span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">{t.category}</span></td>
+                    <td className={`px-6 py-3 text-right font-bold ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {type === 'income' ? '+' : '-'}₹{(t.amount || 0).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
