@@ -33,3 +33,27 @@ httpx==0.27.0
 
 # Utilities
 python-dotenv==1.0.1
+# --- Core Frameworks ---
+fastapi[all]
+uvicorn
+langgraph
+langchain
+langchain-openai
+python-dotenv
+
+# --- Data & PDF Parsing ---
+pandas
+pypdf
+pymupdf
+httpx
+
+# --- Financial Math ---
+numpy
+numpy-financial
+
+# --- Database & Auth ---
+supabase
+
+# --- Utilities ---
+pydantic
+pydantic-settings
